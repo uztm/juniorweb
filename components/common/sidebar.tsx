@@ -17,6 +17,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   LayoutDashboard,
+  ShoppingCart
 } from "lucide-react";
 import { cn } from "@/lib/utils"; // optional utility for merging classNames
 
@@ -37,7 +38,9 @@ const navLinks = [
   { label: "Kalendar", icon: CalendarDays, href: "/dashboard/calendar" },
   { label: "Xavfsizlik", icon: ShieldCheck, href: "/dashboard/security" },
   { label: "Audio va hikoyalar", icon: Headphones, href: "/dashboard/audio" },
+  { label: "Market", icon: ShoppingCart, href: "/dashboard/market" },
   { label: "Profil", icon: User, href: "/dashboard/profile" },
+  
 ];
 
 type Props = {
