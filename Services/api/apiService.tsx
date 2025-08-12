@@ -24,6 +24,8 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+
+
 // --- 3. CRUD methods ---
 export const crud = {
   loadAll: async (resource: any) => {

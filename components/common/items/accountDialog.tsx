@@ -15,8 +15,14 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Student } from "@/types/StudentInfo";
 
-export function AccountDialogMenu() {
+type props = {
+  user?: Student;
+  phone?: any;
+};
+
+export function AccountDialogMenu({ user, phone }: props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -28,11 +34,9 @@ export function AccountDialogMenu() {
             <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
-          <div>
-            <p className=" font-bold text-sm">{"Temirov Bekzodbek"}</p>
-            <p className=" text-gray-600 font-semibold">
-              {"+998 33 225 55 05"}
-            </p>
+          <div className="flex flex-col items-start justify-center ml-2">
+            <p className=" font-bold text-sm">{user?.fullName}</p>
+            <p className=" text-gray-600 font-semibold">{phone}</p>
           </div>
         </Button>
       </DropdownMenuTrigger>
