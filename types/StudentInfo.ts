@@ -18,6 +18,11 @@ export interface Student {
     averagePercentage: number;
     coins: number;
   }
+
+  export interface StudentDebtor {
+    invoiceId: string;
+    leftoverAmount: number;
+  }
   
   export interface LessonResponseData {
     lessonEndTime: string;
@@ -29,7 +34,7 @@ export interface Student {
     moduleBarchart: ModuleBarchart[];
     attendanceAveragePercent: number;
     group: string;
-    studentDebtors: any[]; // You can define a specific type if known
+    studentDebtors: StudentDebtor[];
   }
   
   export interface LessonResponse {

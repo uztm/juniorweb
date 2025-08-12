@@ -96,7 +96,10 @@ export default function Auth() {
 
           const studentId = res.data?.students?.[0]?.id;
           if (studentId) {
-            auth.setStudentId(studentId);
+            auth.setStudentInfo({
+              id: studentId,
+              phoneNumber,
+            });
           }
 
           router.push("/");
@@ -150,7 +153,7 @@ export default function Auth() {
                 <Button
                   onClick={checkPhoneNumber}
                   disabled={checkingPhone}
-                  className="bg-[#FF9F31] text-black font-bold h-12 w-full hover:bg-[#e88d24]"
+                  className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF]"
                 >
                   {checkingPhone ? (
                     <Loader2 className="animate-spin" />
@@ -174,7 +177,7 @@ export default function Auth() {
                 <Button
                   onClick={enterPassword}
                   disabled={checkingPassword}
-                  className="bg-[#FF9F31] text-black font-bold h-12 w-full hover:bg-[#e88d24]"
+                  className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF]"
                 >
                   {checkingPassword ? (
                     <Loader2 className="animate-spin" />
@@ -206,7 +209,7 @@ export default function Auth() {
                 <Button
                   onClick={checkOtp}
                   disabled={verifyingOtp}
-                  className="bg-[#FF9F31] text-black font-bold h-12 w-full hover:bg-[#e88d24]"
+                  className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DF9]"
                 >
                   {verifyingOtp ? (
                     <Loader2 className="animate-spin" />
@@ -219,7 +222,7 @@ export default function Auth() {
 
             <p className="text-sm text-gray-500">
               Parolni unutdingizmi?{" "}
-              <span className="text-[#FF9F31] font-medium cursor-pointer">
+              <span className="text-[#416DFF] font-medium cursor-pointer">
                 Bosing
               </span>
             </p>

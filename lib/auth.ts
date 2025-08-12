@@ -1,8 +1,14 @@
-// hooks/useAuth.ts
 const TOKEN_KEY = "auth_token";
-const STUDENT_ID_KEY = "student_id";
+const STUDENT_INFO_KEY = "student_info";
+
+interface StudentInfo {
+  id: string;
+  phoneNumber: string;
+  // Add more fields as needed
+}
 
 export const auth = {
+  // Token methods
   setToken: (token: string) => {
     localStorage.setItem(TOKEN_KEY, token);
   },
@@ -13,18 +19,20 @@ export const auth = {
 
   removeToken: () => {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(STUDENT_ID_KEY);
+    localStorage.removeItem(STUDENT_INFO_KEY);
   },
 
-  setStudentId: (studentId: string) => {
-    localStorage.setItem(STUDENT_ID_KEY, studentId);
+  // Student Info methods
+  setStudentInfo: (info: StudentInfo) => {
+    localStorage.setItem(STUDENT_INFO_KEY, JSON.stringify(info));
   },
 
-  getStudentId: (): string | null => {
-    return localStorage.getItem(STUDENT_ID_KEY);
+  getStudentInfo: (): StudentInfo | null => {
+    const data = localStorage.getItem(STUDENT_INFO_KEY);
+    return data ? JSON.parse(data) : null;
   },
 
-  removeStudentId: () => {
-    localStorage.removeItem(STUDENT_ID_KEY);
+  removeStudentInfo: () => {
+    localStorage.removeItem(STUDENT_INFO_KEY);
   },
 };
