@@ -114,7 +114,7 @@ export default function Auth() {
     setVerifyingOtp(true);
     try {
       const res = await crud.create("api/auth/v1/junior-app/chek-sms-code", {
-        phoneNumber,
+        phoneNumber: `+998${phoneNumber}`,
         smsCodeId,
         smsCode: code,
       });
