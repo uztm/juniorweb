@@ -14,9 +14,10 @@ import { useState } from "react";
 
 type props = {
   width?: string;
+  isCollapsed?: boolean;
 };
 
-export function LogOutDialog({ width }: props) {
+export function LogOutDialog({ width, isCollapsed }: props) {
   const [loading, setLoading] = useState(false);
 
   const handleLogout = () => {
@@ -39,9 +40,11 @@ export function LogOutDialog({ width }: props) {
             } h-[50px] bg-red-400/20 cursor-pointer rounded-2xl border-2 border-red-500/20 absolute bottom-25 hover:bg-red-500 text-white px-3`}
           >
             <LogOut className="w-6 text-red-500 group-hover:text-white" />
-            <p className="font-bold text-sm text-red-500 group-hover:text-white">
-              Tizimdan chiqish
-            </p>
+            {isCollapsed ? null : (
+              <p className="font-bold text-sm text-red-500 group-hover:text-white">
+                Tizimdan chiqish
+              </p>
+            )}
           </Button>
         </DialogTrigger>
 

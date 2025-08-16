@@ -4,18 +4,16 @@ import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
   Search,
-  Filter,
   ShoppingCart,
   Heart,
-  Star,
   Grid3X3,
   List,
   X,
   Plus,
   Minus,
   Check,
-  AlertCircle,
   Loader2,
+  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,14 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/Services/api/apiService";
 import { useStudentContext } from "@/context/StudentContext";
 
@@ -44,52 +34,26 @@ type Product = {
   image: string;
   quantity: number;
   price: number;
-  category: string;
-  rating: number;
-  reviews: number;
   description: string;
-  isNew: boolean;
-  isFeatured: boolean;
-  tags: string[];
+  isNew?: boolean;
+  isFeatured?: boolean;
 };
 
-type CartItem = Product & {
-  cartQuantity: number;
-};
-
-type FilterState = {
-  category: string;
-  priceRange: [number, number];
-  rating: number;
-  sortBy: string;
-};
+type CartItem = Product & { cartQuantity: number };
 
 export default function MarketPage() {
   const { data } = useStudentContext();
 
-  // State management
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // UI State
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCart, setShowCart] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
-
-  // Filter state
-  const [filters, setFilters] = useState<FilterState>({
-    category: "all",
-    priceRange: [0, 1000],
-    rating: 0,
-    sortBy: "name",
-  });
+  const [showFilters, setShowFilters] = useState(false);
 
   // Fetch products
   useEffect(() => {
@@ -106,172 +70,76 @@ export default function MarketPage() {
               price: item.coinCost,
               quantity: Math.floor(Math.random() * 50) + 1,
               image: item.fileId,
-              description: `${item.name} - bu yuqori sifatli mahsulot bo'lib, o'quvchilar uchun maxsus tayyorlangan.`,
+              description: `${item.name} - yuqori sifatli mahsulot.`,
               isNew: index < 3,
+              isFeatured: index % 2 === 0,
             })
           );
 
           setProducts(mapped);
           setFilteredProducts(mapped);
         }
-      } catch (error) {
-        console.error("Error fetching products", error);
-        setError("Mahsulotlarni yuklashda xatolik yuz berdi");
       } finally {
         setLoading(false);
       }
     }
-
     fetchProducts();
   }, []);
 
-  // Filter and search logic
-  const applyFilters = useMemo(() => {
-    let filtered = [...products];
-
-    // Search filter
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Category filter
-    if (filters.category !== "all") {
-      filtered = filtered.filter(
-        (product) => product.category === filters.category
-      );
-    }
-
-    // Price range filter
-    filtered = filtered.filter(
-      (product) =>
-        product.price >= filters.priceRange[0] &&
-        product.price <= filters.priceRange[1]
-    );
-
-    // Rating filter
-    if (filters.rating > 0) {
-      filtered = filtered.filter((product) => product.rating >= filters.rating);
-    }
-
-    // Tab filter
-    if (activeTab === "new") {
-      filtered = filtered.filter((product) => product.isNew);
-    } else if (activeTab === "featured") {
-      filtered = filtered.filter((product) => product.isFeatured);
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      switch (filters.sortBy) {
-        case "price-low":
-          return a.price - b.price;
-        case "price-high":
-          return b.price - a.price;
-        case "rating":
-          return b.rating - a.rating;
-        case "name":
-        default:
-          return a.name.localeCompare(b.name);
-      }
-    });
-
-    return filtered;
-  }, [products, searchQuery, filters, activeTab]);
-
+  // Search filter
   useEffect(() => {
-    setFilteredProducts(applyFilters);
-  }, [applyFilters]);
-
-  // Cart functions
-  const addToCart = (product: Product, quantity = 1) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? {
-                ...item,
-                cartQuantity: Math.min(
-                  item.cartQuantity + quantity,
-                  item.quantity
-                ),
-              }
-            : item
-        );
-      }
-      return [...prev, { ...product, cartQuantity: quantity }];
-    });
-  };
-
-  const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== productId));
-  };
-
-  const updateCartQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
+    if (!searchQuery) {
+      setFilteredProducts(products);
       return;
     }
+    const q = searchQuery.toLowerCase();
+    setFilteredProducts(
+      products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q)
+      )
+    );
+  }, [searchQuery, products]);
 
+  // Cart logic
+  const addToCart = (product: Product) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.id === product.id);
+      if (existing) {
+        return prev.map((i) =>
+          i.id === product.id
+            ? { ...i, cartQuantity: Math.min(i.cartQuantity + 1, i.quantity) }
+            : i
+        );
+      }
+      return [...prev, { ...product, cartQuantity: 1 }];
+    });
+  };
+  const updateCartQuantity = (id: string, qty: number) => {
+    if (qty <= 0) return setCart((prev) => prev.filter((i) => i.id !== id));
     setCart((prev) =>
-      prev.map((item) =>
-        item.id === productId
-          ? { ...item, cartQuantity: Math.min(quantity, item.quantity) }
-          : item
+      prev.map((i) =>
+        i.id === id ? { ...i, cartQuantity: Math.min(qty, i.quantity) } : i
       )
     );
   };
+  const removeFromCart = (id: string) =>
+    setCart((prev) => prev.filter((i) => i.id !== id));
 
-  // Wishlist functions
-  const toggleWishlist = (productId: string) => {
+  const toggleWishlist = (id: string) =>
     setWishlist((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
-  };
-
-  // Purchase function
-  const handlePurchase = async () => {
-    const totalCost = cart.reduce(
-      (sum, item) => sum + item.price * item.cartQuantity,
-      0
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
 
-    try {
-      // Here you would make API calls to process the purchase
-      alert("Xarid muvaffaqiyatli amalga oshirildi!");
-      setCart([]);
-      setShowCart(false);
-    } catch (error) {
-      alert("Xarid qilishda xatolik yuz berdi!");
-    }
-  };
-
-  const totalCartItems = cart.reduce((sum, item) => sum + item.cartQuantity, 0);
-  const totalCartCost = cart.reduce(
-    (sum, item) => sum + item.price * item.cartQuantity,
-    0
-  );
+  const totalItems = cart.reduce((sum, i) => sum + i.cartQuantity, 0);
+  const totalCost = cart.reduce((sum, i) => sum + i.price * i.cartQuantity, 0);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <span className="ml-2">Mahsulotlar yuklanmoqda...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <AlertCircle className="w-8 h-8 text-red-500" />
-        <span className="ml-2 text-red-500">{error}</span>
+      <div className="flex flex-col items-center justify-center min-h-screen text-gray-500">
+        <Loader2 className="w-8 h-8 animate-spin mb-2" />
+        Mahsulotlar yuklanmoqda...
       </div>
     );
   }
@@ -279,330 +147,172 @@ export default function MarketPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white shadow-lg border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* Mobile Layout */}
-          <div className="flex flex-col gap-3 lg:hidden">
-            {/* Top Row: Coins + Cart */}
-            <div className="flex items-center justify-between">
-              {/* Coin Balance */}
-              <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full shadow">
-                <div className="relative w-6 h-6">
-                  <Image
-                    src="/products/coins.png"
-                    alt="Coin"
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-                <span className="text-sm font-bold">
-                  {data?.data.activeCoin || 0}
-                </span>
-                <span className="text-xs opacity-90">tangalar</span>
-              </div>
-
-              {/* Cart Button */}
-              <Button
-                onClick={() => setShowCart(true)}
-                className="relative bg-blue-600 hover:bg-blue-700 p-2 rounded-full"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                {totalCartItems > 0 && (
-                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {totalCartItems}
-                  </Badge>
-                )}
-              </Button>
-            </div>
-
-            {/* Search Bar */}
-            <div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  placeholder="Mahsulotlarni qidiring..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full"
-                />
-              </div>
-            </div>
+      <header className="bg-white shadow sticky top-0">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          {/* Coins */}
+          <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 rounded-full shadow flex-shrink-0">
+            <Image
+              src="/products/coins.png"
+              alt="coin"
+              width={20}
+              height={20}
+            />
+            <span className="font-bold text-sm">
+              {data?.data.activeCoin || 0}
+            </span>
+            <span className="text-[10px] opacity-80">tanga</span>
           </div>
 
-          {/* Desktop Layout */}
-          <div className="hidden lg:flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            {/* Coin Balance */}
-            <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-3 rounded-full shadow-lg">
-              <div className="relative w-8 h-8">
-                <Image
-                  src="/products/coins.png"
-                  alt="Coin"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <span className="text-xl font-bold">
-                {data?.data.activeCoin || 0}
-              </span>
-              <span className="text-sm opacity-90">tangalar</span>
-            </div>
-
-            {/* Search Bar */}
-            <div className="flex-1 max-w-md mx-auto lg:mx-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  placeholder="Mahsulotlarni qidiring..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full"
-                />
-              </div>
-            </div>
-
-            {/* Cart */}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={() => setShowCart(true)}
-                className="relative bg-blue-600 hover:bg-blue-700"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                {totalCartItems > 0 && (
-                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {totalCartItems}
-                  </Badge>
-                )}
-              </Button>
-            </div>
+          {/* Search */}
+          <div className="flex-1 relative max-w-md mx-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Qidiring..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 text-sm h-9"
+            />
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Tabs */}
-
-            {/* Products Grid/List */}
-            <div
-              className={`grid gap-6 ${
-                viewMode === "grid"
-                  ? "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                  : "grid-cols-1"
-              }`}
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              onClick={() => setShowCart(true)}
+              className="relative bg-blue-600 hover:bg-blue-700 rounded-full p-2 h-9 w-9 flex items-center justify-center"
             >
-              {filteredProducts.map((product) => (
-                <Card
-                  key={product.id}
-                  className={`group hover:shadow-xl transition-all duration-300 cursor-pointer ${
-                    viewMode === "list" ? "flex" : ""
-                  }`}
-                  onClick={() => setSelectedProduct(product)}
-                >
-                  <CardContent
-                    className={`p-0 ${
-                      viewMode === "list" ? "flex w-full" : ""
-                    }`}
-                  >
-                    {/* Product Image */}
-                    <div
-                      className={`relative overflow-hidden p-10 ${
-                        viewMode === "list" ? "aspect-square" : "aspect-square"
-                      } bg-gray-100 rounded-t-lg ${
-                        viewMode === "list"
-                          ? "rounded-l-lg rounded-tr-none"
-                          : ""
-                      }`}
-                    >
-                      <img
-                        src={`https://api.pdp.uz/api/attachment/v1/attachment/download?id=${product.image}&view=open`}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-
-                      {/* Badges */}
-                      <div className="absolute top-2 left-2 flex flex-col gap-1">
-                        {product.isNew && (
-                          <Badge className="bg-green-500 text-white text-xs">
-                            Yangi
-                          </Badge>
-                        )}
-                        {product.isFeatured && (
-                          <Badge className="bg-purple-500 text-white text-xs">
-                            Mashhur
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Wishlist Button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleWishlist(product.id);
-                        }}
-                      >
-                        <Heart
-                          className={`w-4 h-4 ${
-                            wishlist.includes(product.id)
-                              ? "fill-red-500 text-red-500"
-                              : "text-gray-600"
-                          }`}
-                        />
-                      </Button>
-                    </div>
-
-                    {/* Product Info */}
-                    <div
-                      className={`p-4 flex-1 ${
-                        viewMode === "list"
-                          ? "flex flex-col justify-between"
-                          : ""
-                      }`}
-                    >
-                      <div>
-                        <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                          {product.name}
-                        </h3>
-
-                        {viewMode === "list" && (
-                          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                            {product.description}
-                          </p>
-                        )}
-
-                        <p className="text-sm text-gray-500 mb-3">
-                          Mavjud: {product.quantity} dona
-                        </p>
-                      </div>
-
-                      {/* Price and Actions */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="relative w-5 h-5">
-                            <Image
-                              src="/products/coins.png"
-                              alt="Coin"
-                              fill
-                              className="object-contain"
-                            />
-                          </div>
-                          <span className="text-xl font-bold text-blue-600">
-                            {product.price}
-                          </span>
-                        </div>
-
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700"
-                          disabled={product.quantity === 0}
-                        >
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                          Qo'shish
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <Search className="w-16 h-16 mx-auto" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Mahsulot topilmadi
-                </h3>
-                <p className="text-gray-500">
-                  Qidiruv so'zini o'zgartiring yoki filtrlarni qayta sozlang
-                </p>
-              </div>
-            )}
+              <ShoppingCart className="w-4 h-4" />
+              {totalItems > 0 && (
+                <Badge className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] px-1 rounded-full">
+                  {totalItems}
+                </Badge>
+              )}
+            </Button>
           </div>
         </div>
+      </header>
+
+      {/* Product Grid */}
+      <div className="max-w-7xl mx-auto px-4 py-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {filteredProducts.length === 0 && (
+          <div className="col-span-full text-center py-16 text-gray-500">
+            <Search className="w-10 h-10 mx-auto mb-2" />
+            Hech narsa topilmadi
+          </div>
+        )}
+        {filteredProducts.map((product) => (
+          <Card
+            key={product.id}
+            className="group hover:shadow-lg transition cursor-pointer"
+            onClick={() => setSelectedProduct(product)}
+          >
+            <CardContent className="p-0">
+              <div className="relative flex items-center justify-center aspect-square bg-gray-100 rounded-t-lg overflow-hidden">
+                <img
+                  src={`https://api.pdp.uz/api/attachment/v1/attachment/download?id=${product.image}&view=open`}
+                  alt={product.name}
+                  className="w-[70%] object-cover group-hover:scale-105 transition"
+                />
+                {product.isNew && (
+                  <Badge className="absolute top-2 left-2 bg-green-500">
+                    Yangi
+                  </Badge>
+                )}
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="absolute bottom-2 right-2 bg-white/80 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleWishlist(product.id);
+                  }}
+                >
+                  <Heart
+                    className={`w-4 h-4 transition ${
+                      wishlist.includes(product.id)
+                        ? "fill-red-500 text-red-500 scale-110"
+                        : "text-gray-600"
+                    }`}
+                  />
+                </Button>
+              </div>
+
+              <div className="p-4">
+                <h3 className="font-semibold truncate">{product.name}</h3>
+                <p className="text-sm text-gray-500 line-clamp-2">
+                  {product.description}
+                </p>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="flex items-center gap-1 font-bold text-blue-600">
+                    <Image
+                      src="/products/coins.png"
+                      alt="coin"
+                      width={18}
+                      height={18}
+                    />
+                    {product.price}
+                  </span>
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(product);
+                    }}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-1" /> Qo‘shish
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Product Detail Modal */}
+      {/* Product Modal */}
       <Dialog
         open={!!selectedProduct}
         onOpenChange={() => setSelectedProduct(null)}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl">
           {selectedProduct && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-2xl">
-                  {selectedProduct.name}
-                </DialogTitle>
+                <DialogTitle>{selectedProduct.name}</DialogTitle>
               </DialogHeader>
-
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="aspect-square p-6 bg-gray-100 rounded-lg overflow-hidden">
+                <div className="aspect-square flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
                   <img
                     src={`https://api.pdp.uz/api/attachment/v1/attachment/download?id=${selectedProduct.image}&view=open`}
                     alt={selectedProduct.name}
-                    className="w-full h-full object-cover"
+                    className="w-[70%] object-cover"
                   />
                 </div>
-
                 <div className="space-y-4">
                   <p className="text-gray-600">{selectedProduct.description}</p>
-
-                  <div className="flex items-center gap-2 text-lg">
-                    <span>Narx:</span>
-                    <div className="flex items-center gap-2">
-                      <div className="relative w-6 h-6">
-                        <Image
-                          src="/products/coins.png"
-                          alt="Coin"
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                      <span className="text-2xl font-bold text-blue-600">
-                        {selectedProduct.price}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src="/products/coins.png"
+                      alt="coin"
+                      width={20}
+                      height={20}
+                    />
+                    <span className="text-xl font-bold text-blue-600">
+                      {selectedProduct.price}
+                    </span>
                   </div>
-
-                  <p className="text-gray-500">
+                  <p className="text-sm text-gray-500">
                     Mavjud: {selectedProduct.quantity} dona
                   </p>
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={() => {
-                        addToCart(selectedProduct);
-                        setSelectedProduct(null);
-                      }}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                      disabled={selectedProduct.quantity === 0}
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      Savatga qo'shish
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      onClick={() => toggleWishlist(selectedProduct.id)}
-                    >
-                      <Heart
-                        className={`w-4 h-4 ${
-                          wishlist.includes(selectedProduct.id)
-                            ? "fill-red-500 text-red-500"
-                            : ""
-                        }`}
-                      />
-                    </Button>
-                  </div>
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    onClick={() => {
+                      addToCart(selectedProduct);
+                      setSelectedProduct(null);
+                    }}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-1" /> Savatga qo‘shish
+                  </Button>
                 </div>
               </div>
             </>
@@ -610,65 +320,46 @@ export default function MarketPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Shopping Cart Modal */}
+      {/* Cart Modal */}
       <Dialog open={showCart} onOpenChange={setShowCart}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5" />
-              Savat ({totalCartItems} mahsulot)
-            </DialogTitle>
+            <DialogTitle>Savat ({totalItems} ta)</DialogTitle>
           </DialogHeader>
-
           {cart.length === 0 ? (
-            <div className="text-center py-8">
-              <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500">Savat bo'sh</p>
-            </div>
+            <div className="text-center py-8 text-gray-500">Savat bo‘sh</div>
           ) : (
             <div className="space-y-4">
               {cart.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-4 p-4 border rounded-lg"
+                  className="flex items-center gap-3 border p-3 rounded-lg"
                 >
                   <img
                     src={`https://api.pdp.uz/api/attachment/v1/attachment/download?id=${item.image}&view=open`}
                     alt={item.name}
-                    className="w-16 h-16 object-cover rounded"
+                    className="w-16 h-16 rounded object-cover"
                   />
-
                   <div className="flex-1">
                     <h4 className="font-medium">{item.name}</h4>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <div className="relative w-4 h-4">
-                        <Image
-                          src="/products/coins.png"
-                          alt="Coin"
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                      <span>
-                        {item.price} × {item.cartQuantity}
-                      </span>
-                    </div>
+                    <span className="text-sm text-gray-500">
+                      {item.price} × {item.cartQuantity}
+                    </span>
                   </div>
-
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Button
-                      variant="outline"
                       size="sm"
+                      variant="outline"
                       onClick={() =>
                         updateCartQuantity(item.id, item.cartQuantity - 1)
                       }
                     >
                       <Minus className="w-3 h-3" />
                     </Button>
-                    <span className="w-8 text-center">{item.cartQuantity}</span>
+                    <span className="px-2">{item.cartQuantity}</span>
                     <Button
-                      variant="outline"
                       size="sm"
+                      variant="outline"
                       onClick={() =>
                         updateCartQuantity(item.id, item.cartQuantity + 1)
                       }
@@ -677,7 +368,6 @@ export default function MarketPage() {
                       <Plus className="w-3 h-3" />
                     </Button>
                   </div>
-
                   <Button
                     variant="ghost"
                     size="sm"
@@ -687,34 +377,16 @@ export default function MarketPage() {
                   </Button>
                 </div>
               ))}
-
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between text-lg font-semibold mb-4">
-                  <span>Jami:</span>
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-6 h-6">
-                      <Image
-                        src="/products/coins.png"
-                        alt="Coin"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <span className="text-blue-600">{totalCartCost}</span>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handlePurchase}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  disabled={totalCartCost > (data?.data.activeCoin || 0)}
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  {totalCartCost > (data?.data.activeCoin || 0)
-                    ? "Yetarli tanga yo'q"
-                    : "Xarid qilish"}
-                </Button>
+              <div className="flex justify-between font-semibold border-t pt-3">
+                <span>Jami:</span>
+                <span className="text-blue-600">{totalCost}</span>
               </div>
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={totalCost > (data?.data.activeCoin || 0)}
+              >
+                <Check className="w-4 h-4 mr-1" /> Xarid qilish
+              </Button>
             </div>
           )}
         </DialogContent>

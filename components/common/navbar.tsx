@@ -17,8 +17,8 @@ import { LogOutDialog } from "./logoutdialog";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Yutuqlar", href: "/dashboard/achievements", icon: Award },
-  { label: "Xavfsizlik", href: "/dashboard/security", icon: Shield },
+  // { label: "Yutuqlar", href: "/dashboard/achievements", icon: Award },
+  // { label: "Xavfsizlik", href: "/dashboard/security", icon: Shield },
   { label: "Market", href: "/dashboard/market", icon: Store },
   { label: "Profil", href: "/dashboard/profile", icon: User },
 ];
@@ -160,7 +160,7 @@ export default function AdvancedNavbar() {
           {/* Footer */}
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
             <div className="text-center text-sm text-gray-500">
-              © 2025 PDP Jubior
+              © 2025 PDP Junior
             </div>
           </div>
         </div>
