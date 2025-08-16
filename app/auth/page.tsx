@@ -128,6 +128,8 @@ export default function Auth() {
 
   return (
     <div className="bg-[#F2F2F2] w-full h-screen flex flex-col lg:flex-row p-4 gap-5">
+
+      <span className=" absolute bottom-7 right-10 text-white text-sm">V 1.0.5</span>
       {/* Left Section */}
       <div className="w-full lg:w-1/2 flex flex-col gap-5">
         <div className="w-full bg-white rounded-2xl flex-1 flex items-center justify-center p-4">
