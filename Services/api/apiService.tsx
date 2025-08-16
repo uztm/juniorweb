@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth";
 import axios from "axios";
 // import { auth } from "@/lib/auth"; // adjust the path to where your `auth.getToken()` hook is defined
 
-// export const BASE_URL = 'https://api.pdp.uz'
+export const BASE_URL = 'https://api.pdp.uz'
 
-export const BASE_URL = "http://185.74.5.104:8080";
+// export const BASE_URL = "http://185.74.5.104:8080";
 
 // --- 1. Axios instance ---
 export const api = axios.create({
