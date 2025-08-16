@@ -28,7 +28,7 @@ export default function Auth() {
     setCheckingPhone(true);
     try {
       const res = await crud.create("api/auth/v1/junior-app/login", {
-        phoneNumber,
+        phoneNumber: `+998${phoneNumber}`,
       });
 
       if (!res.success) {
@@ -53,7 +53,7 @@ export default function Auth() {
     setCheckingPassword(true);
     try {
       const res = await crud.create("api/auth/v1/junior-app/enter-password", {
-        phoneNumber,
+        phoneNumber: `+998${phoneNumber}`,
         password,
       });
 
@@ -128,6 +128,8 @@ export default function Auth() {
 
   return (
     <div className="bg-[#F2F2F2] w-full h-screen flex flex-col lg:flex-row p-4 gap-5">
+
+      <span className=" absolute bottom-7 right-10 text-white text-sm">V 1.0.5</span>
       {/* Left Section */}
       <div className="w-full lg:w-1/2 flex flex-col gap-5">
         <div className="w-full bg-white rounded-2xl flex-1 flex items-center justify-center p-4">
@@ -144,12 +146,17 @@ export default function Auth() {
                 <p className="text-sm text-gray-600">
                   Telefon raqamingizni kiriting
                 </p>
-                <Input
-                  placeholder="Telefon raqam"
-                  className="bg-[#F8F8F8] h-12 w-full border-none"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                />
+                <div className="flex items-center w-full rounded-lg border border-gray-300 bg-white overflow-hidden">
+                  <span className="px-3 text-gray-600 text-sm">+998</span>
+                  <input
+                    type="tel"
+                    placeholder="Telefon raqam"
+                    className="flex-1 h-12 border-none outline-none focus:outline-none focus:ring-0 text-gray-800 placeholder:text-gray-400"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                </div>
+
                 <Button
                   onClick={checkPhoneNumber}
                   disabled={checkingPhone}

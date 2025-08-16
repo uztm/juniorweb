@@ -37,9 +37,9 @@ const navLinks = [
   //     { label: "Mini o'yinlar", href: "/dashboard/games/mini" },
   //   ],
   // },
-  { label: "Yutuqlar", icon: Trophy, href: "/dashboard/achievements" },
+  // { label: "Yutuqlar", icon: Trophy, href: "/dashboard/achievements" },
   // { label: "Kalendar", icon: CalendarDays, href: "/dashboard/#" },
-  { label: "Xavfsizlik", icon: ShieldCheck, href: "/dashboard/security" },
+  // { label: "Xavfsizlik", icon: ShieldCheck, href: "/dashboard/security" },
   // { label: "Audio va hikoyalar", icon: Headphones, href: "/dashboard/#" },
   { label: "Market", icon: ShoppingCart, href: "/dashboard/market" },
   { label: "Profil", icon: User, href: "/dashboard/profile" },
@@ -126,7 +126,7 @@ export default function Sidebar({
             })}
 
             <div className="w-full absolute bottom-0">
-              <LogOutDialog />
+              <LogOutDialog isCollapsed={isCollapsed} />
             </div>
           </ul>
         </nav>
