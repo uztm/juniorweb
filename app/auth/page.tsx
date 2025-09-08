@@ -113,7 +113,7 @@ export default function Auth() {
     if (code.length < 6) return alert("Kodni to'liq kiriting");
     setVerifyingOtp(true);
     try {
-      const res = await crud.create("api/auth/v1/junior-app/chek-sms-code", {
+      const res = await crud.create("api/auth/v1/junior-app/check-sms-code", {
         phoneNumber: `+998${phoneNumber}`,
         smsCodeId,
         smsCode: code,
@@ -329,7 +329,7 @@ export default function Auth() {
           />
           <div className="text-base sm:text-lg lg:text-xl">
             <p className="text-[#000]">Bizni jamoaga qo'shiling</p>
-            <p className="text-[#416DFF] font-bold">325+</p>
+            <p className="text-[#416DFF] font-bold">1000+</p>
           </div>
         </div>
       </div>

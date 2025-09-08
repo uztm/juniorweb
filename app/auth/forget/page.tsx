@@ -20,7 +20,7 @@ export default function ForgotPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
 
-  // --- 1. Check phone number for password reset ---
+  // --- 1. Check phone number ---
   const checkPhoneNumber = async () => {
     if (!phoneNumber) return alert("Telefon raqamini kiriting");
     setCheckingPhone(true);
@@ -29,16 +29,14 @@ export default function ForgotPassword() {
         phoneNumber: `+998${phoneNumber}`,
       });
       if (res.success) {
-        console.log("Phone check success:", res.data);
         setSmsCodeId(res.data.smsCodeId);
         setStep("otp");
       } else {
-        const error = res.errors?.[0]?.errorMsg || "Noma'lum xatolik";
-        alert("Xatolik: " + error);
+        alert(res.errors?.[0]?.errorMsg || "Xatolik yuz berdi");
       }
     } catch (e) {
-      console.error("Phone check error:", e);
-      alert("Xatolik yuz berdi");
+      console.error(e);
+      alert("Server bilan xatolik");
     } finally {
       setCheckingPhone(false);
     }
@@ -50,21 +48,19 @@ export default function ForgotPassword() {
     if (code.length < 6) return alert("Kodni to'liq kiriting");
     setVerifyingOtp(true);
     try {
-      const res = await crud.create("api/auth/v1/junior-app/verify-reset-code", {
+      const res = await crud.create("api/auth/v1/junior-app/verify-sms-code/", {
         phoneNumber: `+998${phoneNumber}`,
         smsCodeId,
         smsCode: code,
       });
       if (res.success) {
-        console.log("OTP verified:", res.data);
         setStep("newPassword");
       } else {
-        const error = res.errors?.[0]?.errorMsg || "Kod noto'g'ri";
-        alert("Xatolik: " + error);
+        alert(res.errors?.[0]?.errorMsg || "Kod noto'g'ri");
       }
     } catch (e) {
-      console.error("OTP error:", e);
-      alert("Noto'g'ri kod");
+      console.error(e);
+      alert("Xatolik: Kod noto'g'ri");
     } finally {
       setVerifyingOtp(false);
     }
@@ -75,25 +71,27 @@ export default function ForgotPassword() {
     if (!password) return alert("Yangi parolni kiriting");
     if (!confirmPassword) return alert("Parolni tasdiqlang");
     if (password !== confirmPassword) return alert("Parollar mos kelmaydi");
-    if (password.length < 6) return alert("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
+    if (password.length < 6)
+      return alert("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
 
     setResettingPassword(true);
     try {
-      const res = await crud.create("api/auth/v1/junior-app/reset-password", {
+      const res = await crud.create("api/auth/v1/junior-app/set-new-password/", {
         phoneNumber: `+998${phoneNumber}`,
         smsCodeId,
-        newPassword: password,
+        smsCode: otp.join(""),
+        password,
+        repeatPassword: confirmPassword,
       });
       if (res.success) {
         alert("Parol muvaffaqiyatli o'zgartirildi!");
         router.push("/auth");
       } else {
-        const error = res.errors?.[0]?.errorMsg || "Parol o'zgartirishda xatolik";
-        alert("Xatolik: " + error);
+        alert(res.errors?.[0]?.errorMsg || "Parol o'zgartirishda xatolik");
       }
     } catch (e) {
-      console.error("Reset password error:", e);
-      alert("Parol o'zgartirishda xatolik");
+      console.error(e);
+      alert("Server bilan xatolik");
     } finally {
       setResettingPassword(false);
     }
@@ -158,9 +156,9 @@ export default function ForgotPassword() {
   return (
     <div className="bg-[#F2F2F2] w-full h-screen flex items-center justify-center p-4">
       <span className="absolute bottom-7 right-10 text-gray-400 text-sm">
-        V 1.0.5
+        V 1.0.6
       </span>
-      
+
       {/* Simple Form Card */}
       <div className="w-full max-w-[400px] bg-white rounded-2xl p-8">
         <div className="flex flex-col items-center gap-5 text-center">
@@ -197,11 +195,7 @@ export default function ForgotPassword() {
                 disabled={checkingPhone}
                 className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF]"
               >
-                {checkingPhone ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  "Davom etish"
-                )}
+                {checkingPhone ? <Loader2 className="animate-spin" /> : "Davom etish"}
               </Button>
             </>
           )}
@@ -226,11 +220,7 @@ export default function ForgotPassword() {
                 disabled={verifyingOtp}
                 className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF]"
               >
-                {verifyingOtp ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  "Tasdiqlash"
-                )}
+                {verifyingOtp ? <Loader2 className="animate-spin" /> : "Tasdiqlash"}
               </Button>
               <p className="text-sm text-gray-500">
                 Kod kelmadimi?{" "}
@@ -283,7 +273,12 @@ export default function ForgotPassword() {
               )}
               <Button
                 onClick={resetPassword}
-                disabled={resettingPassword || !password || !confirmPassword || password !== confirmPassword}
+                disabled={
+                  resettingPassword ||
+                  !password ||
+                  !confirmPassword ||
+                  password !== confirmPassword
+                }
                 className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF] disabled:opacity-50"
               >
                 {resettingPassword ? (
