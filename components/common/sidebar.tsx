@@ -41,7 +41,7 @@ const navLinks = [
   // { label: "Kalendar", icon: CalendarDays, href: "/dashboard/#" },
   // { label: "Xavfsizlik", icon: ShieldCheck, href: "/dashboard/security" },
   // { label: "Audio va hikoyalar", icon: Headphones, href: "/dashboard/#" },
-  { label: "Market", icon: ShoppingCart, href: "/dashboard/market" },
+  // { label: "Market", icon: ShoppingCart, href: "/dashboard/market" },
   { label: "Profil", icon: User, href: "/dashboard/profile" },
 ];
 

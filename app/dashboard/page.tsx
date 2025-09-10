@@ -223,7 +223,7 @@ export default function DashboardPage() {
 
         {/* Stat Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <ShopCard title="PDP Junior Store" />
+          {/* <ShopCard title="PDP Junior Store" /> */}
           <StatCard
             title={t("dashboard.totalCoinsEarned")}
             value={totalModuleCoins}
