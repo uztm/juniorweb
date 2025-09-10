@@ -14,6 +14,7 @@ import {
   Check,
   Loader2,
   Filter,
+  Construction,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,9 @@ type CartItem = Product & { cartQuantity: number };
 export default function MarketPage() {
   const { data } = useStudentContext();
 
+  // Dev mode toggle - set to false to show "coming soon" modal
+  const [isDevMode, setIsDevMode] = useState(false);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -54,6 +58,7 @@ export default function MarketPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCart, setShowCart] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
 
   // Fetch products
   useEffect(() => {
@@ -102,8 +107,22 @@ export default function MarketPage() {
     );
   }, [searchQuery, products]);
 
+  // Handle product selection
+  const handleProductSelect = (product: Product) => {
+    if (isDevMode) {
+      setSelectedProduct(product);
+    } else {
+      setShowComingSoonModal(true);
+    }
+  };
+
   // Cart logic
   const addToCart = (product: Product) => {
+    if (!isDevMode) {
+      setShowComingSoonModal(true);
+      return;
+    }
+    
     setCart((prev) => {
       const existing = prev.find((i) => i.id === product.id);
       if (existing) {
@@ -116,6 +135,7 @@ export default function MarketPage() {
       return [...prev, { ...product, cartQuantity: 1 }];
     });
   };
+
   const updateCartQuantity = (id: string, qty: number) => {
     if (qty <= 0) return setCart((prev) => prev.filter((i) => i.id !== id));
     setCart((prev) =>
@@ -124,13 +144,27 @@ export default function MarketPage() {
       )
     );
   };
+
   const removeFromCart = (id: string) =>
     setCart((prev) => prev.filter((i) => i.id !== id));
 
-  const toggleWishlist = (id: string) =>
+  const toggleWishlist = (id: string) => {
+    if (!isDevMode) {
+      setShowComingSoonModal(true);
+      return;
+    }
     setWishlist((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
+  };
+
+  const handleCartOpen = () => {
+    if (!isDevMode) {
+      setShowComingSoonModal(true);
+      return;
+    }
+    setShowCart(true);
+  };
 
   const totalItems = cart.reduce((sum, i) => sum + i.cartQuantity, 0);
   const totalCost = cart.reduce((sum, i) => sum + i.price * i.cartQuantity, 0);
@@ -176,8 +210,18 @@ export default function MarketPage() {
 
           {/* Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Dev mode toggle (you can remove this in production) */}
+            {/* <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsDevMode(!isDevMode)}
+              className="text-xs"
+            >
+              {isDevMode ? "Dev" : "Prod"}
+            </Button> */}
+            
             <Button
-              onClick={() => setShowCart(true)}
+              onClick={handleCartOpen}
               className="relative bg-blue-600 hover:bg-blue-700 rounded-full p-2 h-9 w-9 flex items-center justify-center"
             >
               <ShoppingCart className="w-4 h-4" />
@@ -203,7 +247,7 @@ export default function MarketPage() {
           <Card
             key={product.id}
             className="group hover:shadow-lg transition cursor-pointer"
-            onClick={() => setSelectedProduct(product)}
+            onClick={() => handleProductSelect(product)}
           >
             <CardContent className="p-0">
               <div className="relative flex items-center justify-center aspect-square bg-gray-100 rounded-t-lg overflow-hidden">
@@ -260,7 +304,7 @@ export default function MarketPage() {
                       addToCart(product);
                     }}
                   >
-                    <ShoppingCart className="w-4 h-4 mr-1" /> Qo‘shish
+                    <ShoppingCart className="w-4 h-4 mr-1" /> Qo'shish
                   </Button>
                 </div>
               </div>
@@ -269,7 +313,32 @@ export default function MarketPage() {
         ))}
       </div>
 
-      {/* Product Modal */}
+      {/* Coming Soon Modal */}
+      <Dialog open={showComingSoonModal} onOpenChange={setShowComingSoonModal}>
+        <DialogContent className="max-w-md text-center">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-center gap-2">
+              <Construction className="w-6 h-6 text-orange-500" />
+              Tez orada!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-orange-50 p-4 rounded-lg">
+              <p className="text-gray-600">
+                Bu bo'lim hali ishlab chiqilmoqda va tez orada faollashadi.
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowComingSoonModal(false)}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              Tushundim
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Product Modal (only shows in dev mode) */}
       <Dialog
         open={!!selectedProduct}
         onOpenChange={() => setSelectedProduct(null)}
@@ -311,7 +380,7 @@ export default function MarketPage() {
                       setSelectedProduct(null);
                     }}
                   >
-                    <ShoppingCart className="w-4 h-4 mr-1" /> Savatga qo‘shish
+                    <ShoppingCart className="w-4 h-4 mr-1" /> Savatga qo'shish
                   </Button>
                 </div>
               </div>
@@ -320,14 +389,14 @@ export default function MarketPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Cart Modal */}
+      {/* Cart Modal (only shows in dev mode) */}
       <Dialog open={showCart} onOpenChange={setShowCart}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Savat ({totalItems} ta)</DialogTitle>
           </DialogHeader>
           {cart.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Savat bo‘sh</div>
+            <div className="text-center py-8 text-gray-500">Savat bo'sh</div>
           ) : (
             <div className="space-y-4">
               {cart.map((item) => (
