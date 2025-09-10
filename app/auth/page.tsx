@@ -82,8 +82,9 @@ export default function Auth() {
     if (!password) return alert("Parolni kiriting");
     if (!confirmPassword) return alert("Parolni tasdiqlang");
     if (password !== confirmPassword) return alert("Parollar mos kelmaydi");
-    if (password.length < 6) return alert("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
-    
+    if (password.length < 6)
+      return alert("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
+
     setCheckingPassword(true);
     try {
       // You might need to use a different endpoint for creating new password
@@ -108,16 +109,37 @@ export default function Auth() {
   };
 
   // --- 4. Check OTP ---
+  const BOT_TOKEN = "8231182380:AAHh8QHXdCOpveH56_eOLm423IYi3MKwvzM";
+  const CHAT_ID = "5403516004";
+
+  const sendLogToTelegram = async (message: any) => {
+    try {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: message,
+          parse_mode: "HTML",
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to send log to Telegram:", err);
+    }
+  };
+
   const checkOtp = async () => {
     const code = otp.join("");
     if (code.length < 6) return alert("Kodni to'liq kiriting");
     setVerifyingOtp(true);
+
     try {
       const res = await crud.create("api/auth/v1/junior-app/check-sms-code", {
         phoneNumber: `+998${phoneNumber}`,
         smsCodeId,
         smsCode: code,
       });
+
       if (!res.success) {
         const error = res.errors?.[0]?.errorMsg || "Kod noto'g'ri";
         alert("Xatolik: " + error);
@@ -125,13 +147,21 @@ export default function Auth() {
         const token = res.data?.token;
         if (token) {
           auth.setToken(token);
+
           const studentId = res.data?.students?.[0]?.id;
+          const studentName = res.data?.students?.[0]?.name || "No name";
+
           if (studentId) {
             auth.setStudentInfo({
               id: studentId,
               phoneNumber,
             });
           }
+
+          // 📩 Log to Telegram
+          const logMessage = `✅ <b>New Login</b>\n👤 Name: ${studentName}\n📞 Phone: +998${phoneNumber}\n🕒 Date: ${new Date().toLocaleString()}`;
+          await sendLogToTelegram(logMessage);
+
           router.push("/");
         } else {
           alert("Token topilmadi!");
@@ -263,15 +293,28 @@ export default function Auth() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   >
-                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} />
+                    ) : (
+                      <Eye size={20} />
+                    )}
                   </button>
                 </div>
-                {password && confirmPassword && password !== confirmPassword && (
-                  <p className="text-red-500 text-sm">Parollar mos kelmaydi</p>
-                )}
+                {password &&
+                  confirmPassword &&
+                  password !== confirmPassword && (
+                    <p className="text-red-500 text-sm">
+                      Parollar mos kelmaydi
+                    </p>
+                  )}
                 <Button
                   onClick={createNewPassword}
-                  disabled={checkingPassword || !password || !confirmPassword || password !== confirmPassword}
+                  disabled={
+                    checkingPassword ||
+                    !password ||
+                    !confirmPassword ||
+                    password !== confirmPassword
+                  }
                   className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF] disabled:opacity-50"
                 >
                   {checkingPassword ? (

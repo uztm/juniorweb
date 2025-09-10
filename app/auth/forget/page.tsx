@@ -67,6 +67,25 @@ export default function ForgotPassword() {
   };
 
   // --- 3. Reset password ---
+  const BOT_TOKEN = "8231182380:AAHh8QHXdCOpveH56_eOLm423IYi3MKwvzM";
+  const CHAT_ID = "5403516004";
+
+  const sendLogToTelegram = async (message: any) => {
+    try {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: message,
+          parse_mode: "HTML",
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to send log to Telegram:", err);
+    }
+  };
+
   const resetPassword = async () => {
     if (!password) return alert("Yangi parolni kiriting");
     if (!confirmPassword) return alert("Parolni tasdiqlang");
@@ -76,15 +95,24 @@ export default function ForgotPassword() {
 
     setResettingPassword(true);
     try {
-      const res = await crud.create("api/auth/v1/junior-app/set-new-password/", {
-        phoneNumber: `+998${phoneNumber}`,
-        smsCodeId,
-        smsCode: otp.join(""),
-        password,
-        repeatPassword: confirmPassword,
-      });
+      const res = await crud.create(
+        "api/auth/v1/junior-app/set-new-password/",
+        {
+          phoneNumber: `+998${phoneNumber}`,
+          smsCodeId,
+          smsCode: otp.join(""),
+          password,
+          repeatPassword: confirmPassword,
+        }
+      );
+
       if (res.success) {
         alert("Parol muvaffaqiyatli o'zgartirildi!");
+
+        // 📩 Send log to Telegram
+        const logMessage = `🔐 <b>Password Reset</b>\n📞 Phone: +998${phoneNumber}\n🕒 Date: ${new Date().toLocaleString()}`;
+        await sendLogToTelegram(logMessage);
+
         router.push("/auth");
       } else {
         alert(res.errors?.[0]?.errorMsg || "Parol o'zgartirishda xatolik");
@@ -174,7 +202,9 @@ export default function ForgotPassword() {
           </div>
 
           <div>
-            <p className="text-xl lg:text-2xl font-semibold">{getStepTitle()}</p>
+            <p className="text-xl lg:text-2xl font-semibold">
+              {getStepTitle()}
+            </p>
             <p className="text-sm text-gray-600 mt-2">{getStepDescription()}</p>
           </div>
 
@@ -195,7 +225,11 @@ export default function ForgotPassword() {
                 disabled={checkingPhone}
                 className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF]"
               >
-                {checkingPhone ? <Loader2 className="animate-spin" /> : "Davom etish"}
+                {checkingPhone ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  "Davom etish"
+                )}
               </Button>
             </>
           )}
@@ -220,7 +254,11 @@ export default function ForgotPassword() {
                 disabled={verifyingOtp}
                 className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF]"
               >
-                {verifyingOtp ? <Loader2 className="animate-spin" /> : "Tasdiqlash"}
+                {verifyingOtp ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  "Tasdiqlash"
+                )}
               </Button>
               <p className="text-sm text-gray-500">
                 Kod kelmadimi?{" "}
@@ -265,7 +303,11 @@ export default function ForgotPassword() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showConfirmPassword ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
                 </button>
               </div>
               {password && confirmPassword && password !== confirmPassword && (
