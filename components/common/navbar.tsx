@@ -19,7 +19,7 @@ const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   // { label: "Yutuqlar", href: "/dashboard/achievements", icon: Award },
   // { label: "Xavfsizlik", href: "/dashboard/security", icon: Shield },
-  // { label: "Market", href: "/dashboard/market", icon: Store },
+  { label: "Market", href: "/dashboard/market", icon: Store },
   { label: "Profil", href: "/dashboard/profile", icon: User },
 ];
 
