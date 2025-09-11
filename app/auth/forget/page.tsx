@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { crud } from "@/Services/api/apiService";
@@ -7,23 +7,58 @@ import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function ForgotPassword() {
-  const [step, setStep] = useState<"phone" | "otp" | "newPassword">("phone");
+  const [step, setStep] = useState<"phone" | "newPassword" | "otp">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [smsCodeId, setSmsCodeId] = useState("");
   const [checkingPhone, setCheckingPhone] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [sendingForgotRequest, setSendingForgotRequest] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // --- 1. Check phone number ---
+  // Initialize OTP refs
+  useEffect(() => {
+    otpRefs.current = otpRefs.current.slice(0, 6);
+  }, []);
+
+  // --- 1. Check phone number with login endpoint ---
   const checkPhoneNumber = async () => {
     if (!phoneNumber) return alert("Telefon raqamini kiriting");
     setCheckingPhone(true);
+    try {
+      const res = await crud.create("api/auth/v1/junior-app/login", {
+        phoneNumber: `+998${phoneNumber}`,
+      });
+      // If login request is successful (user exists), proceed to password step
+      if (res.success || res.errors) {
+        setStep("newPassword");
+      } else {
+        alert("Telefon raqam topilmadi");
+      }
+    } catch (e) {
+      console.error(e);
+      // Even if there's an error, we might still want to proceed
+      // This depends on your API behavior
+      setStep("newPassword");
+    } finally {
+      setCheckingPhone(false);
+    }
+  };
+
+  // --- 2. Send forgot password request ---
+  const sendForgotPasswordRequest = async () => {
+    if (!password) return alert("Yangi parolni kiriting");
+    if (!confirmPassword) return alert("Parolni tasdiqlang");
+    if (password !== confirmPassword) return alert("Parollar mos kelmaydi");
+    if (password.length < 6)
+      return alert("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
+
+    setSendingForgotRequest(true);
     try {
       const res = await crud.create("api/auth/v1/junior-app/forgot-password", {
         phoneNumber: `+998${phoneNumber}`,
@@ -31,6 +66,10 @@ export default function ForgotPassword() {
       if (res.success) {
         setSmsCodeId(res.data.smsCodeId);
         setStep("otp");
+        // Focus first OTP input after a short delay
+        setTimeout(() => {
+          otpRefs.current[0]?.focus();
+        }, 100);
       } else {
         alert(res.errors?.[0]?.errorMsg || "Xatolik yuz berdi");
       }
@@ -38,35 +77,11 @@ export default function ForgotPassword() {
       console.error(e);
       alert("Server bilan xatolik");
     } finally {
-      setCheckingPhone(false);
+      setSendingForgotRequest(false);
     }
   };
 
-  // --- 2. Verify OTP ---
-  const verifyOtp = async () => {
-    const code = otp.join("");
-    if (code.length < 6) return alert("Kodni to'liq kiriting");
-    setVerifyingOtp(true);
-    try {
-      const res = await crud.create("api/auth/v1/junior-app/verify-sms-code/", {
-        phoneNumber: `+998${phoneNumber}`,
-        smsCodeId,
-        smsCode: code,
-      });
-      if (res.success) {
-        setStep("newPassword");
-      } else {
-        alert(res.errors?.[0]?.errorMsg || "Kod noto'g'ri");
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Xatolik: Kod noto'g'ri");
-    } finally {
-      setVerifyingOtp(false);
-    }
-  };
-
-  // --- 3. Reset password ---
+  // --- 3. Reset password with OTP ---
   const BOT_TOKEN = "8231182380:AAHh8QHXdCOpveH56_eOLm423IYi3MKwvzM";
   const CHAT_ID = "5403516004";
 
@@ -87,11 +102,8 @@ export default function ForgotPassword() {
   };
 
   const resetPassword = async () => {
-    if (!password) return alert("Yangi parolni kiriting");
-    if (!confirmPassword) return alert("Parolni tasdiqlang");
-    if (password !== confirmPassword) return alert("Parollar mos kelmaydi");
-    if (password.length < 6)
-      return alert("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
+    const code = otp.join("");
+    if (code.length < 6) return alert("Kodni to'liq kiriting");
 
     setResettingPassword(true);
     try {
@@ -100,7 +112,7 @@ export default function ForgotPassword() {
         {
           phoneNumber: `+998${phoneNumber}`,
           smsCodeId,
-          smsCode: otp.join(""),
+          smsCode: code,
           password,
           repeatPassword: confirmPassword,
         }
@@ -127,31 +139,97 @@ export default function ForgotPassword() {
 
   // --- 4. Resend OTP ---
   const resendOtp = async () => {
-    await checkPhoneNumber();
-    setOtp(Array(6).fill(""));
+    setSendingForgotRequest(true);
+    try {
+      const res = await crud.create("api/auth/v1/junior-app/forgot-password", {
+        phoneNumber: `+998${phoneNumber}`,
+      });
+      if (res.success) {
+        setSmsCodeId(res.data.smsCodeId);
+        setOtp(Array(6).fill(""));
+        // Clear all OTP inputs and focus first one
+        otpRefs.current.forEach(input => {
+          if (input) input.value = "";
+        });
+        setTimeout(() => {
+          otpRefs.current[0]?.focus();
+        }, 100);
+        alert("Yangi kod yuborildi");
+      } else {
+        alert(res.errors?.[0]?.errorMsg || "Kod yuborishda xatolik");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Server bilan xatolik");
+    } finally {
+      setSendingForgotRequest(false);
+    }
   };
 
+  // Advanced OTP handling with better UX
   const handleOtpChange = (index: number, value: string) => {
+    // Only allow single digits
     if (!/^\d?$/.test(value)) return;
+
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
+
+    // Move to next input if value is entered
     if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
+      otpRefs.current[index + 1]?.focus();
     }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const newOtp = [...otp];
+      
+      if (newOtp[index]) {
+        // Clear current field
+        newOtp[index] = "";
+        setOtp(newOtp);
+      } else if (index > 0) {
+        // Move to previous field and clear it
+        newOtp[index - 1] = "";
+        setOtp(newOtp);
+        otpRefs.current[index - 1]?.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const newOtp = Array(6).fill("");
+    
+    for (let i = 0; i < pasteData.length; i++) {
+      newOtp[i] = pasteData[i];
+    }
+    
+    setOtp(newOtp);
+    
+    // Focus the next empty input or the last filled input
+    const nextEmptyIndex = newOtp.findIndex(digit => !digit);
+    const focusIndex = nextEmptyIndex === -1 ? 5 : Math.min(nextEmptyIndex, 5);
+    otpRefs.current[focusIndex]?.focus();
   };
 
   const goBack = () => {
     if (step === "phone") {
       router.push("/auth");
-    } else if (step === "otp") {
-      setStep("phone");
-      setOtp(Array(6).fill(""));
     } else if (step === "newPassword") {
-      setStep("otp");
+      setStep("phone");
       setPassword("");
       setConfirmPassword("");
+    } else if (step === "otp") {
+      setStep("newPassword");
+      setOtp(Array(6).fill(""));
     }
   };
 
@@ -159,10 +237,10 @@ export default function ForgotPassword() {
     switch (step) {
       case "phone":
         return "Parolni tiklash";
-      case "otp":
-        return "Tasdiqlash";
       case "newPassword":
         return "Yangi parol";
+      case "otp":
+        return "Tasdiqlash";
       default:
         return "Parolni tiklash";
     }
@@ -172,10 +250,10 @@ export default function ForgotPassword() {
     switch (step) {
       case "phone":
         return "Telefon raqamingizni kiriting";
-      case "otp":
-        return "Telefon raqamingizga yuborilgan kodni kiriting";
       case "newPassword":
         return "Yangi parolni kiriting va tasdiqlang";
+      case "otp":
+        return "Telefon raqamingizga yuborilgan kodni kiriting";
       default:
         return "";
     }
@@ -234,44 +312,6 @@ export default function ForgotPassword() {
             </>
           )}
 
-          {step === "otp" && (
-            <>
-              <div className="flex gap-2 justify-center">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    id={`otp-${index}`}
-                    type="text"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    className="w-10 h-12 text-center text-lg border rounded-md"
-                  />
-                ))}
-              </div>
-              <Button
-                onClick={verifyOtp}
-                disabled={verifyingOtp}
-                className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF]"
-              >
-                {verifyingOtp ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  "Tasdiqlash"
-                )}
-              </Button>
-              <p className="text-sm text-gray-500">
-                Kod kelmadimi?{" "}
-                <span
-                  onClick={resendOtp}
-                  className="text-[#416DFF] font-medium cursor-pointer hover:underline"
-                >
-                  Qayta yuborish
-                </span>
-              </p>
-            </>
-          )}
-
           {step === "newPassword" && (
             <>
               <div className="relative w-full">
@@ -314,13 +354,47 @@ export default function ForgotPassword() {
                 <p className="text-red-500 text-sm">Parollar mos kelmaydi</p>
               )}
               <Button
-                onClick={resetPassword}
+                onClick={sendForgotPasswordRequest}
                 disabled={
-                  resettingPassword ||
+                  sendingForgotRequest ||
                   !password ||
                   !confirmPassword ||
                   password !== confirmPassword
                 }
+                className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF] disabled:opacity-50"
+              >
+                {sendingForgotRequest ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  "Davom etish"
+                )}
+              </Button>
+            </>
+          )}
+
+          {step === "otp" && (
+            <>
+              <div className="flex gap-2 justify-center">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => {
+                      otpRefs.current[index] = el;
+                    }}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    onPaste={index === 0 ? handleOtpPaste : undefined}
+                    className="w-10 h-12 text-center text-lg border rounded-md focus:outline-none focus:ring-2 focus:ring-[#416DFF] focus:border-transparent"
+                    autoComplete="off"
+                  />
+                ))}
+              </div>
+              <Button
+                onClick={resetPassword}
+                disabled={resettingPassword || otp.join("").length < 6}
                 className="bg-[#416DFF] text-white font-bold h-12 w-full hover:bg-[#416DFF] disabled:opacity-50"
               >
                 {resettingPassword ? (
@@ -329,6 +403,15 @@ export default function ForgotPassword() {
                   "Parolni o'zgartirish"
                 )}
               </Button>
+              <p className="text-sm text-gray-500">
+                Kod kelmadimi?{" "}
+                <span
+                  onClick={resendOtp}
+                  className="text-[#416DFF] font-medium cursor-pointer hover:underline"
+                >
+                  {sendingForgotRequest ? "Yuborilmoqda..." : "Qayta yuborish"}
+                </span>
+              </p>
             </>
           )}
         </div>
