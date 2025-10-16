@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   LogOut,
+  Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils"; // optional utility for merging classNames
 import { Button } from "../ui/button";
@@ -43,6 +44,7 @@ const navLinks = [
   // { label: "Audio va hikoyalar", icon: Headphones, href: "/dashboard/#" },
   { label: "Market", icon: ShoppingCart, href: "/dashboard/market" },
   { label: "Profil", icon: User, href: "/dashboard/profile" },
+  { label: "Oy qahramonlari", icon: Crown, href: "/dashboard/hero-of-the-month" },
 ];
 
 type Props = {
