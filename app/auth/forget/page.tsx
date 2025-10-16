@@ -81,25 +81,25 @@ export default function ForgotPassword() {
     }
   };
 
-  // --- 3. Reset password with OTP ---
-  const BOT_TOKEN = "8231182380:AAHh8QHXdCOpveH56_eOLm423IYi3MKwvzM";
-  const CHAT_ID = "5403516004";
+  // // --- 3. Reset password with OTP ---
+  // const BOT_TOKEN = "8231182380:AAHh8QHXdCOpveH56_eOLm423IYi3MKwvzM";
+  // const CHAT_ID = "5403516004";
 
-  const sendLogToTelegram = async (message: any) => {
-    try {
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text: message,
-          parse_mode: "HTML",
-        }),
-      });
-    } catch (err) {
-      console.error("Failed to send log to Telegram:", err);
-    }
-  };
+  // const sendLogToTelegram = async (message: any) => {
+  //   try {
+  //     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         chat_id: CHAT_ID,
+  //         text: message,
+  //         parse_mode: "HTML",
+  //       }),
+  //     });
+  //   } catch (err) {
+  //     console.error("Failed to send log to Telegram:", err);
+  //   }
+  // };
 
   const resetPassword = async () => {
     const code = otp.join("");
@@ -122,8 +122,8 @@ export default function ForgotPassword() {
         alert("Parol muvaffaqiyatli o'zgartirildi!");
 
         // 📩 Send log to Telegram
-        const logMessage = `🔐 <b>Password Reset</b>\n📞 Phone: +998${phoneNumber}\n🕒 Date: ${new Date().toLocaleString()}`;
-        await sendLogToTelegram(logMessage);
+        // const logMessage = `🔐 <b>Password Reset</b>\n📞 Phone: +998${phoneNumber}\n🕒 Date: ${new Date().toLocaleString()}`;
+        // await sendLogToTelegram(logMessage);
 
         router.push("/auth");
       } else {
