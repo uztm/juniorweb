@@ -10,6 +10,7 @@ import {
   Shield,
   Store,
   User,
+  Crown,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const navItems = [
   // { label: "Xavfsizlik", href: "/dashboard/security", icon: Shield },
   { label: "Market", href: "/dashboard/market", icon: Store },
   { label: "Profil", href: "/dashboard/profile", icon: User },
+  { label: "Oy qahramonlari", icon: Crown, href: "/dashboard/hero-of-the-month" },
 ];
 
 export default function AdvancedNavbar() {
